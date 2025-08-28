@@ -114,9 +114,4 @@ Todos endpoints responden JSON con "objeto", "mensaje", "status". Usa Postman pa
 2. Orden para datos: Categoria > Caracteristica > Proveedor > Cliente > Articulo > ArticuloCaracteristica > Compra > CompraArticulo > Venta > VentaArticulo.
 3. Ejemplo POST /api/articulos: Body JSON, envía, chequea status 201 y ID en objeto.
 
-## Notas
-- Validaciones: Manuales en controllers (ej. campos obligatorios, positivos). Si falla, status 400.
-- Relaciones: Cascade borra hijos al eliminar padre (ej. eliminar Articulo borra sus características).
-- Mejoras futuras: Agrega lógica en services para actualizar stock (ej. en CompraArticuloService, suma quantity a Articulo.quantity).
-- Debug: Pon show-sql=true para ver queries SQL en console.
 
