@@ -1,10 +1,15 @@
 package com.shop.service;
 
+import com.shop.dto.CategoriaDTO; // Importa DTO.
 import com.shop.entity.Categoria;
+import com.shop.exception.ResourceNotFoundException;
 import com.shop.repository.CategoriaRepository;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CategoriaService {
@@ -17,21 +22,27 @@ public class CategoriaService {
     }
 
     public Categoria getById(Long id) {
-        return repository.findById(id).orElseThrow(() -> new RuntimeException("Categoria no encontrado con ID: " + id));
+        Optional<Categoria> optional = repository.findById(id);
+        return optional.orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada con ID: " + id));
     }
 
-    public Categoria create(Categoria categoria) {
+    @Transactional
+    public Categoria create(@Valid CategoriaDTO dto) {
+        Categoria categoria = new Categoria(); // Crea la entidad.
+        categoria.setDescription(dto.getDescription()); // Mapear.
         return repository.save(categoria);
     }
 
-    public Categoria update(Long id, Categoria details) {
-        Categoria categoria = getById(id);
-        if (details.getDescription() != null) categoria.setDescription(details.getDescription());
-        return repository.save(categoria);
+    @Transactional
+    public Categoria update(Long id, @Valid CategoriaDTO dto) {
+        Categoria existing = getById(id);
+        if (dto.getDescription() != null) existing.setDescription(dto.getDescription());
+        return repository.save(existing);
     }
 
+    @Transactional
     public void delete(Long id) {
-        Categoria categoria = getById(id);
-        repository.delete(categoria);
+        Categoria toDelete = getById(id);
+        repository.delete(toDelete);
     }
 }

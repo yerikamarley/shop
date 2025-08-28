@@ -1,10 +1,15 @@
 package com.shop.service;
 
+import com.shop.dto.ProveedorDTO; // Importa DTO.
 import com.shop.entity.Proveedor;
+import com.shop.exception.ResourceNotFoundException;
 import com.shop.repository.ProveedorRepository;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ProveedorService {
@@ -17,24 +22,33 @@ public class ProveedorService {
     }
 
     public Proveedor getById(Long id) {
-        return repository.findById(id).orElseThrow(() -> new RuntimeException("Proveedor no encontrado con ID: " + id));
+        Optional<Proveedor> optional = repository.findById(id);
+        return optional.orElseThrow(() -> new ResourceNotFoundException("Proveedor no encontrado con ID: " + id));
     }
 
-    public Proveedor create(Proveedor proveedor) {
+    @Transactional
+    public Proveedor create(@Valid ProveedorDTO dto) {
+        Proveedor proveedor = new Proveedor(); // Crea la entidad.
+        proveedor.setName(dto.getName()); // Mapear.
+        proveedor.setAddress(dto.getAddress());
+        proveedor.setPhone(dto.getPhone());
+        proveedor.setEmail(dto.getEmail());
         return repository.save(proveedor);
     }
 
-    public Proveedor update(Long id, Proveedor details) {
-        Proveedor proveedor = getById(id);
-        if (details.getName() != null) proveedor.setName(details.getName());
-        if (details.getAddress() != null) proveedor.setAddress(details.getAddress());
-        if (details.getPhone() != null) proveedor.setPhone(details.getPhone());
-        if (details.getEmail() != null) proveedor.setEmail(details.getEmail());
-        return repository.save(proveedor);
+    @Transactional
+    public Proveedor update(Long id, @Valid ProveedorDTO dto) {
+        Proveedor existing = getById(id);
+        if (dto.getName() != null) existing.setName(dto.getName());
+        if (dto.getAddress() != null) existing.setAddress(dto.getAddress());
+        if (dto.getPhone() != null) existing.setPhone(dto.getPhone());
+        if (dto.getEmail() != null) existing.setEmail(dto.getEmail());
+        return repository.save(existing);
     }
 
+    @Transactional
     public void delete(Long id) {
-        Proveedor proveedor = getById(id);
-        repository.delete(proveedor);
+        Proveedor toDelete = getById(id);
+        repository.delete(toDelete);
     }
 }

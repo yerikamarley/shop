@@ -1,125 +1,63 @@
 package com.shop.controller;
-import com.shop.entity.Articulo;
-import com.shop.entity.ArticuloCaracteristica;
+
+import com.shop.dto.ArticuloDTO;
+import com.shop.exception.ResponseDTO;
 import com.shop.service.ArticuloService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.HashMap;
-import java.util.Map;
-@RestController
-@RequestMapping("/api/articulos")
+
+@RestController // Esto hace que la clase maneje requests REST con JSON.
+@RequestMapping("/api/articulos") // Ruta base para este controller.
 public class ArticuloController {
-@Autowired
-private ArticuloService service;
-@GetMapping
-public ResponseEntity<Map<String, Object>> getAll() {
-Map<String, Object> response = new HashMap<>();
-response.put("objeto", service.getAll());
-response.put("mensaje", "Artículos obtenidos correctamente");
-response.put("status", HttpStatus.OK.value());
-return ResponseEntity.ok(response);
-}
-@GetMapping("/{id}")
-public ResponseEntity<Map<String, Object>> getById(@PathVariable Long id) {
-Map<String, Object> response = new HashMap<>();
-try {
-response.put("objeto", service.getById(id));
-response.put("mensaje", "Artículo obtenido correctamente");
-response.put("status", HttpStatus.OK.value());
-return ResponseEntity.ok(response);
-} catch (RuntimeException e) {
-response.put("objeto", null);
-response.put("mensaje", e.getMessage());
-response.put("status", HttpStatus.NOT_FOUND.value());
-return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-}
-}
-@PostMapping
-public ResponseEntity<Map<String, Object>> create(@RequestBody Articulo articulo) {
-Map<String, Object> response = new HashMap<>();
-String error = validateArticulo(articulo, false);
-if (error != null) {
-response.put("objeto", null);
-response.put("mensaje", error);
-response.put("status", HttpStatus.BAD_REQUEST.value());
-return ResponseEntity.badRequest().body(response);
-}
-response.put("objeto", service.create(articulo));
-response.put("mensaje", "Artículo creado correctamente");
-response.put("status", HttpStatus.CREATED.value());
-return ResponseEntity.status(HttpStatus.CREATED).body(response);
-}
-@PutMapping("/{id}")
-public ResponseEntity<Map<String, Object>> update(@PathVariable Long id, @RequestBody Articulo articulo) {
-Map<String, Object> response = new HashMap<>();
-String error = validateArticulo(articulo, true);
-if (error != null) {
-response.put("objeto", null);
-response.put("mensaje", error);
-response.put("status", HttpStatus.BAD_REQUEST.value());
-return ResponseEntity.badRequest().body(response);
-}
-try {
-response.put("objeto", service.update(id, articulo));
-response.put("mensaje", "Artículo actualizado correctamente");
-response.put("status", HttpStatus.OK.value());
-return ResponseEntity.ok(response);
-} catch (RuntimeException e) {
-response.put("objeto", null);
-response.put("mensaje", e.getMessage());
-response.put("status", HttpStatus.NOT_FOUND.value());
-return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-}
-}
-@DeleteMapping("/{id}")
-public ResponseEntity<Map<String, Object>> delete(@PathVariable Long id) {
-Map<String, Object> response = new HashMap<>();
-try {
-service.delete(id);
-response.put("objeto", null);
-response.put("mensaje", "Artículo eliminado correctamente");
-response.put("status", HttpStatus.OK.value());
-return ResponseEntity.ok(response);
-} catch (RuntimeException e) {
-response.put("objeto", null);
-response.put("mensaje", e.getMessage());
-response.put("status", HttpStatus.NOT_FOUND.value());
-return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-}
-}
-private String validateArticulo(Articulo articulo, boolean isUpdate) {
-if (!isUpdate) {
-if (articulo.getName() == null || articulo.getName().trim().isEmpty()) {
-return "El nombre es obligatorio y no puede estar vacío";
-}
-if (articulo.getCategoria() == null || articulo.getCategoria().getId() == null) {
-return "La categoría es obligatoria";
-}
-if (articulo.getQuantity() == null || articulo.getQuantity() < 0) {
-return "La cantidad debe ser cero o positiva";
-}
-if (articulo.getState() == null) {
-return "El estado es obligatorio";
-}
-}
-if (articulo.getName() != null && articulo.getName().length() > 100) {
-return "El nombre no puede exceder 100 caracteres";
-}
-if (articulo.getDescription() != null && articulo.getDescription().length() > 255) {
-return "La descripción no puede exceder 255 caracteres";
-}
-if (articulo.getQuantity() != null && articulo.getQuantity() < 0) {
-return "La cantidad debe ser cero o positiva";
-}
-if (articulo.getCaracteristicas() != null) {
-for (ArticuloCaracteristica charac : articulo.getCaracteristicas()) {
-if (charac.getValue() == null || charac.getValue().trim().isEmpty()) {
-return "El valor de característica no puede estar vacío";
-}
-}
-}
-return null;
-}
+
+    @Autowired // Inyecta el service automáticamente.
+    private ArticuloService service;
+
+    /**
+     * Obtiene todos los artículos.
+     */
+    @GetMapping
+    public ResponseEntity<ResponseDTO> getAll() {
+        return ResponseEntity.ok(new ResponseDTO(service.getAll(), "Artículos obtenidos correctamente", "OK"));
+    }
+
+    /**
+     * Obtiene un artículo por ID.
+     * @param id El ID a buscar.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<ResponseDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(new ResponseDTO(service.getById(id), "Artículo obtenido correctamente", "OK"));
+    }
+
+    /**
+     * Crea un nuevo artículo.
+     * @param dto El DTO con datos para crear.
+     */
+    @PostMapping
+    public ResponseEntity<ResponseDTO> create(@Valid @RequestBody ArticuloDTO dto) {
+        return ResponseEntity.status(201).body(new ResponseDTO(service.create(dto), "Artículo creado correctamente", "OK"));
+    }
+
+    /**
+     * Actualiza un artículo existente.
+     * @param id El ID a actualizar.
+     * @param dto Detalles nuevos del DTO.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<ResponseDTO> update(@PathVariable Long id, @Valid @RequestBody ArticuloDTO dto) {
+        return ResponseEntity.ok(new ResponseDTO(service.update(id, dto), "Artículo actualizado correctamente", "OK"));
+    }
+
+    /**
+     * Borra un artículo por ID.
+     * @param id El ID a borrar.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ResponseDTO> delete(@PathVariable Long id) {
+        service.delete(id);
+        return ResponseEntity.ok(new ResponseDTO(null, "Artículo eliminado correctamente", "OK"));
+    }
 }

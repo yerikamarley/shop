@@ -1,121 +1,63 @@
 package com.shop.controller;
 
-import com.shop.entity.ArticuloCaracteristica;
+import com.shop.dto.ArticuloCaracteristicaDTO;
+import com.shop.exception.ResponseDTO;
 import com.shop.service.ArticuloCaracteristicaService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import java.util.HashMap;
-import java.util.Map;
+    import jakarta.validation.Valid;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.http.ResponseEntity;
+    import org.springframework.web.bind.annotation.*;
 
-@RestController
-@RequestMapping("/api/articulo-caracteristicas")
+@RestController // Esto hace que la clase maneje requests REST con JSON.
+@RequestMapping("/api/articulo-caracteristicas") // Ruta base para este controller.
 public class ArticuloCaracteristicaController {
 
-    @Autowired
+    @Autowired // Inyecta el service automáticamente.
     private ArticuloCaracteristicaService service;
 
+    /**
+     * Obtiene todas las relaciones artículo-característica.
+     */
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getAll() {
-        Map<String, Object> response = new HashMap<>();
-        response.put("objeto", service.getAll());
-        response.put("mensaje", "ArticuloCaracteristicas obtenidos correctamente");
-        response.put("status", HttpStatus.OK.value());
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ResponseDTO> getAll() {
+        return ResponseEntity.ok(new ResponseDTO(service.getAll(), "ArticuloCaracteristicas obtenidos correctamente", "OK"));
     }
 
+    /**
+     * Obtiene una relación por ID.
+     * @param id El ID a buscar.
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getById(@PathVariable Long id) {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            response.put("objeto", service.getById(id));
-            response.put("mensaje", "ArticuloCaracteristica obtenido correctamente");
-            response.put("status", HttpStatus.OK.value());
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            response.put("objeto", null);
-            response.put("mensaje", e.getMessage());
-            response.put("status", HttpStatus.NOT_FOUND.value());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
+    public ResponseEntity<ResponseDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(new ResponseDTO(service.getById(id), "ArticuloCaracteristica obtenido correctamente", "OK"));
     }
 
+    /**
+     * Crea una nueva relación.
+     * @param dto El DTO con datos para crear.
+     */
     @PostMapping
-    public ResponseEntity<Map<String, Object>> create(@RequestBody ArticuloCaracteristica articuloCaracteristica) {
-        Map<String, Object> response = new HashMap<>();
-
-        String error = validateArticuloCaracteristica(articuloCaracteristica, false);
-        if (error != null) {
-            response.put("objeto", null);
-            response.put("mensaje", error);
-            response.put("status", HttpStatus.BAD_REQUEST.value());
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        response.put("objeto", service.create(articuloCaracteristica));
-        response.put("mensaje", "ArticuloCaracteristica creado correctamente");
-        response.put("status", HttpStatus.CREATED.value());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<ResponseDTO> create(@Valid @RequestBody ArticuloCaracteristicaDTO dto) {
+        return ResponseEntity.status(201).body(new ResponseDTO(service.create(dto), "ArticuloCaracteristica creado correctamente", "OK"));
     }
 
+    /**
+     * Actualiza una relación existente.
+     * @param id El ID a actualizar.
+     * @param dto Detalles nuevos del DTO.
+     */
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> update(@PathVariable Long id, @RequestBody ArticuloCaracteristica articuloCaracteristica) {
-        Map<String, Object> response = new HashMap<>();
-
-        String error = validateArticuloCaracteristica(articuloCaracteristica, true);
-        if (error != null) {
-            response.put("objeto", null);
-            response.put("mensaje", error);
-            response.put("status", HttpStatus.BAD_REQUEST.value());
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        try {
-            response.put("objeto", service.update(id, articuloCaracteristica));
-            response.put("mensaje", "ArticuloCaracteristica actualizado correctamente");
-            response.put("status", HttpStatus.OK.value());
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            response.put("objeto", null);
-            response.put("mensaje", e.getMessage());
-            response.put("status", HttpStatus.NOT_FOUND.value());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
+    public ResponseEntity<ResponseDTO> update(@PathVariable Long id, @Valid @RequestBody ArticuloCaracteristicaDTO dto) {
+        return ResponseEntity.ok(new ResponseDTO(service.update(id, dto), "ArticuloCaracteristica actualizado correctamente", "OK"));
     }
 
+    /**
+     * Borra una relación por ID.
+     * @param id El ID a borrar.
+     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> delete(@PathVariable Long id) {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            service.delete(id);
-            response.put("objeto", null);
-            response.put("mensaje", "ArticuloCaracteristica eliminado correctamente");
-            response.put("status", HttpStatus.OK.value());
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            response.put("objeto", null);
-            response.put("mensaje", e.getMessage());
-            response.put("status", HttpStatus.NOT_FOUND.value());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
-    }
-
-    private String validateArticuloCaracteristica(ArticuloCaracteristica articuloCaracteristica, boolean isUpdate) {
-        if (!isUpdate) {
-            if (articuloCaracteristica.getArticulo() == null || articuloCaracteristica.getArticulo().getId() == null) {
-                return "El artículo es obligatorio";
-            }
-            if (articuloCaracteristica.getCaracteristica() == null || articuloCaracteristica.getCaracteristica().getId() == null) {
-                return "La característica es obligatoria";
-            }
-            if (articuloCaracteristica.getValue() == null || articuloCaracteristica.getValue().trim().isEmpty()) {
-                return "El valor es obligatorio y no puede estar vacío";
-            }
-        }
-        if (articuloCaracteristica.getValue() != null && articuloCaracteristica.getValue().length() > 255) {
-            return "El valor no puede exceder 255 caracteres";
-        }
-        return null;
+    public ResponseEntity<ResponseDTO> delete(@PathVariable Long id) {
+        service.delete(id);
+        return ResponseEntity.ok(new ResponseDTO(null, "ArticuloCaracteristica eliminado correctamente", "OK"));
     }
 }

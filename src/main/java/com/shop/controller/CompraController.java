@@ -1,125 +1,64 @@
 package com.shop.controller;
 
-import com.shop.entity.Compra;
+import com.shop.dto.CompraDTO;
+import com.shop.exception.ResponseDTO;
 import com.shop.service.CompraService;
+import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
-@RestController
-@RequestMapping("/api/compras")
+@RestController // Esto hace que la clase maneje requests REST con JSON.
+@RequestMapping("/api/compras") // Ruta base para este controller.
 public class CompraController {
 
-    @Autowired
+    @Autowired // Inyecta el service automáticamente.
     private CompraService service;
 
+    /**
+     * Obtiene todas las compras.
+     */
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getAll() {
-        Map<String, Object> response = new HashMap<>();
-        response.put("objeto", service.getAll());
-        response.put("mensaje", "Compras obtenidas correctamente");
-        response.put("status", HttpStatus.OK.value());
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ResponseDTO> getAll() {
+        return ResponseEntity.ok(new ResponseDTO(service.getAll(), "Compras obtenidas correctamente", "OK"));
     }
 
+    /**
+     * Obtiene una compra por ID.
+     * @param id El ID a buscar.
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getById(@PathVariable Long id) {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            response.put("objeto", service.getById(id));
-            response.put("mensaje", "Compra obtenida correctamente");
-            response.put("status", HttpStatus.OK.value());
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            response.put("objeto", null);
-            response.put("mensaje", e.getMessage());
-            response.put("status", HttpStatus.NOT_FOUND.value());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
+    public ResponseEntity<ResponseDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(new ResponseDTO(service.getById(id), "Compra obtenida correctamente", "OK"));
     }
 
+    /**
+     * Crea una nueva compra.
+     * @param dto El DTO con datos para crear.
+     */
     @PostMapping
-    public ResponseEntity<Map<String, Object>> create(@RequestBody Compra compra) {
-        Map<String, Object> response = new HashMap<>();
-
-        String error = validateCompra(compra, false);
-        if (error != null) {
-            response.put("objeto", null);
-            response.put("mensaje", error);
-            response.put("status", HttpStatus.BAD_REQUEST.value());
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        response.put("objeto", service.create(compra));
-        response.put("mensaje", "Compra creada correctamente");
-        response.put("status", HttpStatus.CREATED.value());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<ResponseDTO> create(@Valid @RequestBody CompraDTO dto) {
+        return ResponseEntity.status(201).body(new ResponseDTO(service.create(dto), "Compra creada correctamente", "OK"));
     }
 
+    /**
+     * Actualiza una compra existente.
+     * @param id El ID a actualizar.
+     * @param dto Detalles nuevos del DTO.
+     */
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> update(@PathVariable Long id, @RequestBody Compra compra) {
-        Map<String, Object> response = new HashMap<>();
-
-        String error = validateCompra(compra, true);
-        if (error != null) {
-            response.put("objeto", null);
-            response.put("mensaje", error);
-            response.put("status", HttpStatus.BAD_REQUEST.value());
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        try {
-            response.put("objeto", service.update(id, compra));
-            response.put("mensaje", "Compra actualizada correctamente");
-            response.put("status", HttpStatus.OK.value());
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            response.put("objeto", null);
-            response.put("mensaje", e.getMessage());
-            response.put("status", HttpStatus.NOT_FOUND.value());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
+    public ResponseEntity<ResponseDTO> update(@PathVariable Long id, @Valid @RequestBody CompraDTO dto) {
+        return ResponseEntity.ok(new ResponseDTO(service.update(id, dto), "Compra actualizada correctamente", "OK"));
     }
 
+    /**
+     * Borra una compra por ID.
+     * @param id El ID a borrar.
+     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> delete(@PathVariable Long id) {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            service.delete(id);
-            response.put("objeto", null);
-            response.put("mensaje", "Compra eliminada correctamente");
-            response.put("status", HttpStatus.OK.value());
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            response.put("objeto", null);
-            response.put("mensaje", e.getMessage());
-            response.put("status", HttpStatus.NOT_FOUND.value());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
-    }
-
-    private String validateCompra(Compra compra, boolean isUpdate) {
-        if (!isUpdate) {
-            if (compra.getTime() == null || compra.getTime().isAfter(LocalDateTime.now())) {
-                return "La fecha es obligatoria y no puede ser futura";
-            }
-            if (compra.getProveedor() == null || compra.getProveedor().getId() == null) {
-                return "El proveedor es obligatorio";
-            }
-            if (compra.getValue() == null || compra.getValue() <= 0) {
-                return "El valor debe ser positivo";
-            }
-        }
-        if (compra.getTime() != null && compra.getTime().isAfter(LocalDateTime.now())) {
-            return "La fecha no puede ser futura";
-        }
-        if (compra.getValue() != null && compra.getValue() <= 0) {
-            return "El valor debe ser positivo";
-        }
-        return null;
+    public ResponseEntity<ResponseDTO> delete(@PathVariable Long id) {
+        service.delete(id);
+        return ResponseEntity.ok(new ResponseDTO(null, "Compra eliminada correctamente", "OK"));
     }
 }

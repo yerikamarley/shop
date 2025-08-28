@@ -1,125 +1,63 @@
 package com.shop.controller;
 
-import com.shop.entity.Venta;
+import com.shop.dto.VentaDTO;
+import com.shop.exception.ResponseDTO;
 import com.shop.service.VentaService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+    import jakarta.validation.Valid;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.http.ResponseEntity;
+    import org.springframework.web.bind.annotation.*;
 
-@RestController
-@RequestMapping("/api/ventas")
+@RestController // Esto hace que la clase maneje requests REST con JSON.
+@RequestMapping("/api/ventas") // Ruta base para este controller.
 public class VentaController {
 
-    @Autowired
+    @Autowired // Inyecta el service automáticamente.
     private VentaService service;
 
+    /**
+     * Obtiene todas las ventas.
+     */
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getAll() {
-        Map<String, Object> response = new HashMap<>();
-        response.put("objeto", service.getAll());
-        response.put("mensaje", "Ventas obtenidas correctamente");
-        response.put("status", HttpStatus.OK.value());
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ResponseDTO> getAll() {
+        return ResponseEntity.ok(new ResponseDTO(service.getAll(), "Ventas obtenidas correctamente", "OK"));
     }
 
+    /**
+     * Obtiene una venta por ID.
+     * @param id El ID a buscar.
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getById(@PathVariable Long id) {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            response.put("objeto", service.getById(id));
-            response.put("mensaje", "Venta obtenida correctamente");
-            response.put("status", HttpStatus.OK.value());
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            response.put("objeto", null);
-            response.put("mensaje", e.getMessage());
-            response.put("status", HttpStatus.NOT_FOUND.value());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
+    public ResponseEntity<ResponseDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(new ResponseDTO(service.getById(id), "Venta obtenida correctamente", "OK"));
     }
 
+    /**
+     * Crea una nueva venta.
+     * @param dto El DTO con datos para crear.
+     */
     @PostMapping
-    public ResponseEntity<Map<String, Object>> create(@RequestBody Venta venta) {
-        Map<String, Object> response = new HashMap<>();
-
-        String error = validateVenta(venta, false);
-        if (error != null) {
-            response.put("objeto", null);
-            response.put("mensaje", error);
-            response.put("status", HttpStatus.BAD_REQUEST.value());
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        response.put("objeto", service.create(venta));
-        response.put("mensaje", "Venta creada correctamente");
-        response.put("status", HttpStatus.CREATED.value());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<ResponseDTO> create(@Valid @RequestBody VentaDTO dto) {
+        return ResponseEntity.status(201).body(new ResponseDTO(service.create(dto), "Venta creada correctamente", "OK"));
     }
 
+    /**
+     * Actualiza una venta existente.
+     * @param id El ID a actualizar.
+     * @param dto Detalles nuevos del DTO.
+     */
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> update(@PathVariable Long id, @RequestBody Venta venta) {
-        Map<String, Object> response = new HashMap<>();
-
-        String error = validateVenta(venta, true);
-        if (error != null) {
-            response.put("objeto", null);
-            response.put("mensaje", error);
-            response.put("status", HttpStatus.BAD_REQUEST.value());
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        try {
-            response.put("objeto", service.update(id, venta));
-            response.put("mensaje", "Venta actualizada correctamente");
-            response.put("status", HttpStatus.OK.value());
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            response.put("objeto", null);
-            response.put("mensaje", e.getMessage());
-            response.put("status", HttpStatus.NOT_FOUND.value());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
+    public ResponseEntity<ResponseDTO> update(@PathVariable Long id, @Valid @RequestBody VentaDTO dto) {
+        return ResponseEntity.ok(new ResponseDTO(service.update(id, dto), "Venta actualizada correctamente", "OK"));
     }
 
+    /**
+     * Borra una venta por ID.
+     * @param id El ID a borrar.
+     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> delete(@PathVariable Long id) {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            service.delete(id);
-            response.put("objeto", null);
-            response.put("mensaje", "Venta eliminada correctamente");
-            response.put("status", HttpStatus.OK.value());
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            response.put("objeto", null);
-            response.put("mensaje", e.getMessage());
-            response.put("status", HttpStatus.NOT_FOUND.value());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
-    }
-
-    private String validateVenta(Venta venta, boolean isUpdate) {
-        if (!isUpdate) {
-            if (venta.getTime() == null || venta.getTime().isAfter(LocalDateTime.now())) {
-                return "La fecha es obligatoria y no puede ser futura";
-            }
-            if (venta.getCliente() == null || venta.getCliente().getId() == null) {
-                return "El cliente es obligatorio";
-            }
-            if (venta.getValue() == null || venta.getValue() <= 0) {
-                return "El valor debe ser positivo";
-            }
-        }
-        if (venta.getTime() != null && venta.getTime().isAfter(LocalDateTime.now())) {
-            return "La fecha no puede ser futura";
-        }
-        if (venta.getValue() != null && venta.getValue() <= 0) {
-            return "El valor debe ser positivo";
-        }
-        return null;
+    public ResponseEntity<ResponseDTO> delete(@PathVariable Long id) {
+        service.delete(id);
+        return ResponseEntity.ok(new ResponseDTO(null, "Venta eliminada correctamente", "OK"));
     }
 }
